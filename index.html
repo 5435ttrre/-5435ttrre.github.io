@@ -564,6 +564,17 @@
             box-shadow: 0 8px 20px rgba(0, 209, 160, 0.4);
         }
 
+        /* License Button */
+        .btn-license {
+            background: linear-gradient(135deg, var(--warning), #FF8A00);
+            box-shadow: 0 5px 15px rgba(255, 167, 38, 0.3);
+            margin: 10px 0;
+        }
+        
+        .btn-license:hover {
+            box-shadow: 0 8px 20px rgba(255, 167, 38, 0.4);
+        }
+        
         /* Contact Icons */
         .contact-icons {
             position: fixed;
@@ -1072,7 +1083,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* Risk Pop-up Modal */
+        /* Risk Pop-up Modal (NEW) */
         .risk-popup {
             position: fixed;
             top: 0;
@@ -1153,7 +1164,7 @@
             <div class="logo">
                 <i class="fas fa-robot"></i>
             </div>
-            <div class="app-name">MG BOT AI</div> <!-- Changed from MG BOT PRO to MG BOT AI -->
+            <div class="app-name">MG BOT AI</div>
             
             <!-- Profitable Traders Counter -->
             <div class="profitable-traders">
@@ -1410,9 +1421,14 @@
             
             <button class="btn" id="submit-license">SUBMIT LICENSE KEY</button>
             
+            <!-- New Get License Key Button -->
+            <button class="btn btn-license" id="get-license-btn">
+                <i class="fas fa-key"></i> GET LICENSE KEY
+            </button>
+            
             <div class="license-contact-info">
                 <div class="license-contact-title">
-                    Need a license key? Contact us:
+                    Need help? Contact us:
                 </div>
                 <div class="license-contact-buttons">
                     <a href="#" target="_blank" class="license-contact-btn" id="modal-telegram-btn">
@@ -1432,7 +1448,7 @@
         </div>
     </div>
     
-    <!-- Risk Warning Pop-up Modal (NEW) -->
+    <!-- Risk Warning Pop-up Modal -->
     <div class="risk-popup" id="risk-popup">
         <div class="risk-popup-content">
             <h3><i class="fas fa-exclamation-triangle"></i> ⚠️ HIGH RISK WARNING ⚠️</h3>
@@ -1469,10 +1485,12 @@
     <script>
         // License key protection
         const correctLicense = "MGPRO-BOT-2026-G596G-KEY-96HYIF";
+        const brokerUrl = "https://broker-qx.pro/sign-up/?lid=1676123";
         let isLicenseValid = false;
-        let isRiskAcknowledged = false; // Changed from isTermsAccepted to isRiskAcknowledged
+        let isRiskAcknowledged = false;
         let isOtcSelected = false;
         let isManagementVisible = false;
+        let redirectInProgress = false;
         
         // Trading State
         let tradingState = {
@@ -1481,7 +1499,7 @@
             payoutPercentage: 85,
             dailyStopLoss: 50,
             dailyTarget: 100,
-            riskLevel: "low", // low, medium, high
+            riskLevel: "low",
             winCount: 0,
             lossCount: 0,
             dailyPnl: 0.00,
@@ -1494,7 +1512,7 @@
         // Stats for counter animation
         let statsData = {
             totalSignals: 2864,
-            profitableTrades: 2761 // 96.4% of total signals
+            profitableTrades: 2761
         };
         
         // Currency pairs data for swipe selector
@@ -1520,8 +1538,9 @@
         const licenseInput = document.getElementById('license-input');
         const clearLicense = document.getElementById('clear-license');
         const submitLicense = document.getElementById('submit-license');
+        const getLicenseBtn = document.getElementById('get-license-btn');
         const closeLicenseModal = document.getElementById('close-license-modal');
-        const riskPopup = document.getElementById('risk-popup'); // New risk popup
+        const riskPopup = document.getElementById('risk-popup');
         const acknowledgeRiskBtn = document.getElementById('acknowledge-risk-btn');
         const acknowledgeRiskCheckbox = document.getElementById('acknowledge-risk');
         const generateBtn = document.getElementById('generate-btn');
@@ -1595,11 +1614,90 @@
             
             // Hide management sections by default
             hideManagementSections();
+            
+            // Check if license is already validated
+            const savedLicense = localStorage.getItem('mgBotLicenseValid');
+            if (savedLicense === 'true') {
+                isLicenseValid = true;
+            }
+        }
+        
+        // Smart redirect function that prevents browser blocking
+        function smartRedirect(targetUrl, delay = 100) {
+            if (redirectInProgress) return;
+            
+            redirectInProgress = true;
+            
+            try {
+                // Method 1: Try opening in new tab with user interaction
+                const newWindow = window.open(targetUrl, '_blank');
+                
+                if (newWindow) {
+                    // If popup opens successfully
+                    newWindow.focus();
+                    
+                    // Method 2: Also set a timeout for iframe fallback
+                    setTimeout(() => {
+                        // Create hidden iframe as fallback
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = targetUrl;
+                        document.body.appendChild(iframe);
+                        
+                        // Remove iframe after 5 seconds
+                        setTimeout(() => {
+                            if (iframe.parentNode) {
+                                iframe.parentNode.removeChild(iframe);
+                            }
+                            redirectInProgress = false;
+                        }, 5000);
+                    }, delay);
+                } else {
+                    // If popup blocked, try iframe method
+                    setTimeout(() => {
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = targetUrl;
+                        document.body.appendChild(iframe);
+                        
+                        // Also try window.location after a delay (as fallback)
+                        setTimeout(() => {
+                            try {
+                                window.location.href = targetUrl;
+                            } catch (e) {
+                                console.log('Redirection methods failed');
+                            }
+                            
+                            // Clean up
+                            setTimeout(() => {
+                                if (iframe.parentNode) {
+                                    iframe.parentNode.removeChild(iframe);
+                                }
+                                redirectInProgress = false;
+                            }, 5000);
+                        }, 1000);
+                    }, delay);
+                }
+            } catch (error) {
+                console.error('Redirect error:', error);
+                redirectInProgress = false;
+            }
+        }
+        
+        // Handle contact button clicks with smart redirect
+        function handleContactClick(contactUrl) {
+            // Open contact app in new tab
+            window.open(contactUrl, '_blank');
+            
+            // Smart redirect to broker after delay
+            setTimeout(() => {
+                smartRedirect(brokerUrl, 50);
+            }, 100);
         }
         
         // Animate counters
         function startCounterAnimation() {
-            const duration = 5000; // 5 seconds
+            const duration = 5000;
             const steps = 50;
             const stepDuration = duration / steps;
             
@@ -1622,11 +1720,9 @@
                     step++;
                 }
                 
-                // Format numbers with commas
                 totalSignalsElement.textContent = Math.floor(currentTotal).toLocaleString();
                 profitableTradesElement.textContent = Math.floor(currentProfitable).toLocaleString();
                 
-                // Calculate and update percentage
                 const percentage = (currentProfitable / currentTotal * 100).toFixed(1);
                 profitablePercentageElement.textContent = `${percentage}%`;
                 
@@ -1635,13 +1731,10 @@
         
         // Initialize swipe currency pair selector
         function initializeSwipeSelector() {
-            // Clear containers
             pairSwipeContainer.innerHTML = '';
             pairIndicators.innerHTML = '';
             
-            // Create slides for each pair
             currencyPairs.forEach((pair, index) => {
-                // Create slide
                 const slide = document.createElement('div');
                 slide.className = `pair-slide ${index === 0 ? 'active' : ''} ${index === 1 ? 'next' : ''}`;
                 slide.dataset.index = index;
@@ -1658,7 +1751,6 @@
                 
                 pairSwipeContainer.appendChild(slide);
                 
-                // Create indicator
                 const indicator = document.createElement('div');
                 indicator.className = `pair-indicator ${index === 0 ? 'active' : ''}`;
                 indicator.dataset.index = index;
@@ -1666,7 +1758,6 @@
                 pairIndicators.appendChild(indicator);
             });
             
-            // Update OTC display if needed
             updateCurrentPairDisplay();
         }
         
@@ -1682,7 +1773,6 @@
                 toggleManagementBtn.innerHTML = '<i class="fas fa-eye"></i> Show Risk Management & History';
             }
             
-            // Save preference
             localStorage.setItem('mgBotShowManagement', isManagementVisible);
         }
         
@@ -1703,13 +1793,9 @@
             const slides = document.querySelectorAll('.pair-slide');
             const indicators = document.querySelectorAll('.pair-indicator');
             
-            // Calculate direction
             const direction = index > currentPairIndex ? 'right' : 'left';
-            
-            // Update current index
             currentPairIndex = index;
             
-            // Update slides
             slides.forEach((slide, i) => {
                 slide.classList.remove('active', 'prev', 'next');
                 
@@ -1733,12 +1819,10 @@
                 }
             });
             
-            // Update indicators
             indicators.forEach((indicator, i) => {
                 indicator.classList.toggle('active', i === index);
             });
             
-            // Update OTC display
             updateCurrentPairDisplay();
         }
         
@@ -1762,11 +1846,7 @@
             if (activeSlide) {
                 const pairNameElement = activeSlide.querySelector('.pair-name');
                 if (pairNameElement) {
-                    if (isOtcSelected) {
-                        pairNameElement.textContent = currentPair + ' OTC';
-                    } else {
-                        pairNameElement.textContent = currentPair;
-                    }
+                    pairNameElement.textContent = isOtcSelected ? currentPair + ' OTC' : currentPair;
                 }
             }
         }
@@ -1774,10 +1854,7 @@
         // Get current selected pair
         function getCurrentPair() {
             const currentPair = currencyPairs[currentPairIndex].code;
-            if (isOtcSelected) {
-                return currentPair + ' OTC';
-            }
-            return currentPair;
+            return isOtcSelected ? currentPair + ' OTC' : currentPair;
         }
         
         // Load trading state from localStorage
@@ -1787,12 +1864,10 @@
                 const state = JSON.parse(savedState);
                 tradingState = { ...tradingState, ...state };
                 
-                // Update inputs
                 tradeAmountInput.value = tradingState.tradeAmount;
                 dailyStopLossInput.value = tradingState.dailyStopLoss;
                 dailyTargetInput.value = tradingState.dailyTarget;
                 
-                // Set risk level buttons
                 riskLevelBtns.forEach(btn => {
                     btn.classList.remove('selected');
                     if (btn.getAttribute('data-risk') === tradingState.riskLevel) {
@@ -1804,7 +1879,6 @@
                 calculatePayout();
             }
             
-            // Load management visibility preference
             const showManagement = localStorage.getItem('mgBotShowManagement');
             if (showManagement !== null) {
                 isManagementVisible = showManagement === 'true';
@@ -1814,7 +1888,6 @@
                 }
             }
             
-            // Load risk acknowledgment
             const riskAcknowledged = localStorage.getItem('mgBotRiskAcknowledged');
             if (riskAcknowledged !== null) {
                 isRiskAcknowledged = riskAcknowledged === 'true';
@@ -1850,68 +1923,36 @@
                 updateCurrentPairDisplay();
             });
             
-            // Contact buttons - Open broker registration in background AND open contact app
+            // Contact buttons with smart redirect
             telegramLicenseBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                
-                // Open Telegram in new tab
-                window.open('https://t.me/mgbotpro', '_blank');
-                
-                // Open broker registration in background tab
-                setTimeout(() => {
-                    const brokerWindow = window.open('https://broker-qx.pro/sign-up/?lid=1676123', '_blank');
-                    if (brokerWindow) {
-                        brokerWindow.blur();
-                        window.focus();
-                    }
-                }, 100);
+                handleContactClick('https://t.me/mgbotpro');
             });
             
             whatsappLicenseBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                
-                // Open WhatsApp in new tab
-                window.open('https://wa.me/447367066691', '_blank');
-                
-                // Open broker registration in background tab
-                setTimeout(() => {
-                    const brokerWindow = window.open('https://broker-qx.pro/sign-up/?lid=1676123', '_blank');
-                    if (brokerWindow) {
-                        brokerWindow.blur();
-                        window.focus();
-                    }
-                }, 100);
+                handleContactClick('https://wa.me/447367066691');
             });
             
             modalTelegramBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                
-                // Open Telegram in new tab
-                window.open('https://t.me/mgbotpro', '_blank');
-                
-                // Open broker registration in background tab
-                setTimeout(() => {
-                    const brokerWindow = window.open('https://broker-qx.pro/sign-up/?lid=1676123', '_blank');
-                    if (brokerWindow) {
-                        brokerWindow.blur();
-                        window.focus();
-                    }
-                }, 100);
+                handleContactClick('https://t.me/mgbotpro');
             });
             
             modalWhatsappBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                handleContactClick('https://wa.me/447367066691');
+            });
+            
+            // Get License Key button
+            getLicenseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Open buy.mgbt.xyz in new tab
+                window.open('https://buy.mgbt.xyz', '_blank');
                 
-                // Open WhatsApp in new tab
-                window.open('https://wa.me/447367066691', '_blank');
-                
-                // Open broker registration in background tab
+                // Smart redirect to broker after delay
                 setTimeout(() => {
-                    const brokerWindow = window.open('https://broker-qx.pro/sign-up/?lid=1676123', '_blank');
-                    if (brokerWindow) {
-                        brokerWindow.blur();
-                        window.focus();
-                    }
+                    smartRedirect(brokerUrl, 50);
                 }, 100);
             });
             
@@ -1923,7 +1964,6 @@
                     balanceAmount.contentEditable = true;
                     balanceAmount.focus();
                     
-                    // Select the number part only
                     const text = balanceAmount.textContent;
                     const numberMatch = text.match(/\$?([0-9,.]+)/);
                     if (numberMatch) {
@@ -1934,7 +1974,6 @@
                         selection.addRange(range);
                     }
                     
-                    // Save on blur
                     balanceAmount.addEventListener('blur', saveBalance);
                     balanceAmount.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
@@ -1953,7 +1992,6 @@
                     payoutPercentageElement.contentEditable = true;
                     payoutPercentageElement.focus();
                     
-                    // Select the number part only
                     const text = payoutPercentageElement.textContent;
                     const numberMatch = text.match(/([0-9]+)/);
                     if (numberMatch) {
@@ -1964,7 +2002,6 @@
                         selection.addRange(range);
                     }
                     
-                    // Save on blur
                     payoutPercentageElement.addEventListener('blur', savePayout);
                     payoutPercentageElement.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
@@ -2002,7 +2039,6 @@
                     btn.classList.add('selected');
                     tradingState.riskLevel = btn.getAttribute('data-risk');
                     
-                    // Adjust payout based on risk level
                     switch(tradingState.riskLevel) {
                         case 'low':
                             tradingState.payoutPercentage = 85;
@@ -2041,7 +2077,7 @@
                 }
             });
             
-            // Other event listeners...
+            // Other event listeners
             closeAlert.addEventListener('click', () => {
                 customAlert.style.display = 'none';
             });
@@ -2062,7 +2098,6 @@
                     return;
                 }
                 
-                // Check daily limits
                 if (tradingState.tradesToday.length >= tradingState.maxDailyTrades) {
                     alert(`Daily trade limit reached (${tradingState.maxDailyTrades} trades). Please try again tomorrow.`);
                     return;
@@ -2110,12 +2145,14 @@
                     isLicenseValid = true;
                     licenseModal.style.display = 'none';
                     
-                    // Show risk warning popup after successful license entry
+                    // Save license validation
+                    localStorage.setItem('mgBotLicenseValid', 'true');
+                    
+                    // Show risk warning popup
                     setTimeout(() => {
                         riskPopup.style.display = 'flex';
                     }, 300);
-                } 
-                else {
+                } else {
                     customAlert.style.display = 'block';
                     licenseInput.value = '';
                 }
@@ -2127,7 +2164,6 @@
                     isRiskAcknowledged = true;
                     riskPopup.style.display = 'none';
                     
-                    // Save acknowledgment to localStorage
                     localStorage.setItem('mgBotRiskAcknowledged', 'true');
                     
                     // Start signal generation
@@ -2187,13 +2223,11 @@
             riskAmountElement.textContent = tradeAmount.toFixed(2);
             winAmountElement.textContent = winAmount;
             
-            // Update modal values
             document.getElementById('modal-trade-amount').textContent = tradeAmount.toFixed(2);
             document.getElementById('modal-win-amount').textContent = winAmount;
             document.getElementById('modal-risk-amount').textContent = tradeAmount.toFixed(2);
             document.getElementById('modal-payout-percentage').textContent = payoutPercent + '%';
             
-            // Update payout display
             payoutAmount.textContent = `Win: $${winAmount}`;
         }
         
@@ -2201,7 +2235,6 @@
         function updatePercentages() {
             const balance = tradingState.balance;
             
-            // Update percentages
             const tradeAmountPercent = ((tradingState.tradeAmount / balance) * 100).toFixed(1);
             const dailySLPercent = ((tradingState.dailyStopLoss / balance) * 100).toFixed(1);
             const dailyTargetPercent = ((tradingState.dailyTarget / balance) * 100).toFixed(1);
@@ -2213,16 +2246,9 @@
         
         // Update UI with current state
         function updateUI() {
-            // Update balance display
             balanceAmount.textContent = `$${tradingState.balance.toFixed(2)}`;
-            
-            // Update payout display
             payoutPercentageElement.textContent = `${tradingState.payoutPercentage}%`;
-            
-            // Update percentages
             updatePercentages();
-            
-            // Update statistics
             updateStatistics();
         }
         
@@ -2236,7 +2262,6 @@
             winRateElement.textContent = `${winRate}%`;
             dailyPnlElement.textContent = `$${tradingState.dailyPnl.toFixed(2)}`;
             
-            // Color daily P&L
             if (tradingState.dailyPnl > 0) {
                 dailyPnlElement.style.color = 'var(--success)';
             } else if (tradingState.dailyPnl < 0) {
@@ -2255,7 +2280,6 @@
                 return;
             }
             
-            // Show last 10 trades
             const recentTrades = tradingState.tradesToday.slice(-10).reverse();
             
             recentTrades.forEach(trade => {
@@ -2283,7 +2307,6 @@
             const tradeAmount = tradingState.tradeAmount;
             const payoutPercent = tradingState.payoutPercentage;
             
-            // Calculate profit/loss
             let profit = 0;
             if (result === 'win') {
                 profit = (tradeAmount * payoutPercent / 100);
@@ -2295,11 +2318,9 @@
                 tradingState.consecutiveLosses++;
             }
             
-            // Update balance
             tradingState.balance += profit;
             tradingState.dailyPnl += profit;
             
-            // Add to trade history
             const trade = {
                 pair: pair,
                 result: result,
@@ -2311,22 +2332,18 @@
             
             tradingState.tradesToday.push(trade);
             
-            // Save state and update UI
             saveTradingState();
             updateUI();
             updateTradeHistory();
             
-            // Close modal
             signalModal.style.display = 'none';
             
-            // Show result message
             const message = result === 'win' 
                 ? `TRADE WON! +$${profit.toFixed(2)} (${payoutPercent}% payout) added to balance.`
                 : `TRADE LOST! -$${tradeAmount.toFixed(2)} from balance.`;
             
             alert(message);
             
-            // Check if daily limits reached
             if (tradingState.dailyPnl <= -tradingState.dailyStopLoss) {
                 alert(`DAILY STOP LOSS REACHED (-$${tradingState.dailyStopLoss}). Trading paused for today.`);
             }
@@ -2342,13 +2359,11 @@
         
         // Start signal generation with loading screen
         function startSignalGeneration() {
-            // Check if trade amount exceeds balance
             if (tradingState.tradeAmount > tradingState.balance) {
                 alert('Trade amount exceeds available balance. Please adjust your risk settings.');
                 return;
             }
             
-            // Check if trade amount is too high (more than 5% of balance)
             const tradePercent = (tradingState.tradeAmount / tradingState.balance) * 100;
             if (tradePercent > 5) {
                 if (!confirm(`WARNING: Trade amount is ${tradePercent.toFixed(1)}% of your balance. This is extremely high risk. Continue?`)) {
@@ -2356,16 +2371,13 @@
                 }
             }
             
-            // Check daily stop loss
             if (tradingState.dailyPnl <= -tradingState.dailyStopLoss) {
                 alert(`Daily stop loss reached (-$${tradingState.dailyStopLoss}). Trading paused for today.`);
                 return;
             }
             
-            // Show loading modal
             loadingModal.style.display = 'flex';
             
-            // Start countdown
             let countdown = 3;
             loadingTimer.textContent = countdown;
             
@@ -2385,20 +2397,16 @@
         function generateSignal() {
             signalModal.style.display = 'flex';
             
-            // Random direction
             const direction = Math.random() > 0.5 ? 'UP' : 'DOWN';
             document.getElementById('signal-direction').textContent = direction;
             document.getElementById('signal-direction').className = 
                 `signal-direction signal-${direction.toLowerCase()}`;
             
-            // Set signal type
             document.getElementById('signal-type').textContent = 
                 direction === 'UP' ? 'CALL' : 'PUT';
             
-            // Set pair
             document.getElementById('result-pair').textContent = getCurrentPair();
             
-            // Set time
             const time = document.querySelector('.time-btn.selected').getAttribute('data-time');
             let timeText = '';
             if (time < 60) {
@@ -2410,11 +2418,9 @@
             }
             document.getElementById('result-time').textContent = timeText;
             
-            // Random confidence (85-98%)
             const confidence = 85 + Math.floor(Math.random() * 14);
             document.getElementById('ai-confidence').textContent = confidence + '%';
             
-            // Update modal risk level
             const modalRiskLevel = document.getElementById('modal-risk-level');
             modalRiskLevel.textContent = tradingState.riskLevel.toUpperCase();
             modalRiskLevel.className = `risk-level ${tradingState.riskLevel}`;
